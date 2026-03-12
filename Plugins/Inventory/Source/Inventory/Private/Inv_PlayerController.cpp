@@ -8,11 +8,13 @@
 #include "Kismet/GameplayStatics.h"
 #include "Items/Components/Inv_ItemComponent.h"
 #include "Interaction/Inv_Highlightable.h"
+#include "InventoryManagement/Components/Inv_InventoryComponent.h"
 
 AInv_PlayerController::AInv_PlayerController()
 {
 	PrimaryActorTick.bCanEverTick = true;
 	TraceLength = 500.0;
+	ItemChannel = ECollisionChannel::ECC_EngineTraceChannel1;
 }
 
 void AInv_PlayerController::Tick(float DeltaSeconds)
@@ -20,6 +22,15 @@ void AInv_PlayerController::Tick(float DeltaSeconds)
 	Super::Tick(DeltaSeconds);
 
 	TraceForItem();
+}
+
+void AInv_PlayerController::ToggleInventory()
+{
+	InventoryComponent = FindComponentByClass<UInv_InventoryComponent>();
+
+	if (!InventoryComponent.IsValid()) return;
+
+	InventoryComponent->ToggleInventoryMenu();
 }
 
 void AInv_PlayerController::BeginPlay()
@@ -50,6 +61,7 @@ void AInv_PlayerController::SetupInputComponent()
 	if (UEnhancedInputComponent* EnhancedInputComponent = CastChecked<UEnhancedInputComponent>(InputComponent))
 	{
 		EnhancedInputComponent->BindAction(PrimaryInteractAction, ETriggerEvent::Started, this, &AInv_PlayerController::PrimaryInteract);
+		EnhancedInputComponent->BindAction(ToggleInventoryAction, ETriggerEvent::Started, this, &AInv_PlayerController::ToggleInventory);
 	}
 }
 
