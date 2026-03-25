@@ -4,9 +4,16 @@
 
 #include "CoreMinimal.h"
 #include "Components/ActorComponent.h"
+#include "InventoryManagement/FastArray/Inv_FastArray.h"
 #include "Inv_InventoryComponent.generated.h"
 
+class UInv_ItemComponent;
+class UInv_InventoryItem;
 class UInv_InventoryBase;
+
+// 아이템이 추가/삭제 되었음을 알리는 델리게이트를 형성
+DECLARE_DYNAMIC_MULTICAST_DELEGATE_OneParam(FInventoryItemChange, UInv_InventoryItem*, Item);
+DECLARE_DYNAMIC_MULTICAST_DELEGATE(FNoRoomInInventory);
 
 UCLASS( ClassGroup=(Custom), meta=(BlueprintSpawnableComponent), Blueprintable )
 class INVENTORY_API UInv_InventoryComponent : public UActorComponent
@@ -15,8 +22,24 @@ class INVENTORY_API UInv_InventoryComponent : public UActorComponent
 
 public:	
 	UInv_InventoryComponent();
+	
+	virtual void GetLifetimeReplicatedProps(TArray<class FLifetimeProperty>& OutLifetimeProps) const override;
+	
+	UFUNCTION(BlueprintCallable, BlueprintAuthorityOnly, Category = "Inventory")
+	void TryAddItem(UInv_ItemComponent* ItemComponent);
 
+	UFUNCTION(Server, Reliable)
+	void Server_AddNewItem(UInv_ItemComponent* ItemComponent, int StackCount);
+	
+	UFUNCTION(Server, Reliable)
+	void Server_AddStacksToItem(UInv_ItemComponent* ItemComponent, int StackCount, int Remainder);
+	
 	void ToggleInventoryMenu();
+	void AddRepSubObj(UObject* SubObj);
+	
+	FInventoryItemChange OnItemAdded;
+	FInventoryItemChange OnItemRemoved;
+	FNoRoomInInventory NoRoomInInventory;
 protected:
 	virtual void BeginPlay() override;
 
@@ -24,6 +47,9 @@ private:
 	void ConstructInventory();
 
 	TWeakObjectPtr<APlayerController> OwningController;
+	
+	UPROPERTY(Replicated)
+	FInv_InventoryFastArray InventoryList;
 
 	UPROPERTY()
 	TObjectPtr<UInv_InventoryBase> InventoryMenu;

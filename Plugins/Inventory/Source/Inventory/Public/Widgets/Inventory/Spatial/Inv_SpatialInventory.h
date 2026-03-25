@@ -19,6 +19,8 @@ public:
 	virtual void NativeOnInitialized() override;
 	
 private:
+	
+	virtual FInv_SlotAvailabilityResult HasRoomForItem(UInv_ItemComponent* ItemComponent) const override;
 
 	UPROPERTY(meta = (BindWidget))
 	TObjectPtr<UWidgetSwitcher> Switcher;
