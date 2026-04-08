@@ -2,8 +2,11 @@
 
 
 #include "Widgets/Inventory/Spatial/Inv_SpatialInventory.h"
+
+#include "Inventory.h"
 #include "Components/Button.h"
 #include "Components/WidgetSwitcher.h"
+#include "InventoryManagement/Utils/Inv_InventoryStatics.h"
 #include "Widgets/Inventory/Spatial/Inv_InventoryGrid.h"
 
 void UInv_SpatialInventory::NativeOnInitialized()
@@ -19,9 +22,18 @@ void UInv_SpatialInventory::NativeOnInitialized()
 
 FInv_SlotAvailabilityResult UInv_SpatialInventory::HasRoomForItem(UInv_ItemComponent* ItemComponent) const
 {
-	FInv_SlotAvailabilityResult Result;
-	Result.TotalRoomToFill = 1;
-	return Result;
+	switch (UInv_InventoryStatics::GetItemCategoryFromItemComp(ItemComponent))
+	{
+	case EInv_ItemCategory::Equippable:
+		return Grid_Equippables->HasRoomForItem(ItemComponent);
+	case EInv_ItemCategory::Consumable:
+		return Grid_Consumables->HasRoomForItem(ItemComponent);
+	case EInv_ItemCategory::Craftable:
+		return Grid_Craftables->HasRoomForItem(ItemComponent);
+	default:
+		UE_LOG(LogInventory, Error, TEXT("ItemComponent가 유효한 ItemCategory를 지니고 있지 않음."));
+		return FInv_SlotAvailabilityResult();
+	}
 }
 
 void UInv_SpatialInventory::ShowEquippables()
