@@ -6,6 +6,7 @@
 #include "Items/Components/Inv_ItemComponent.h"
 #include "Net/UnrealNetwork.h"
 #include "Widgets/Inventory/InventoryBase/Inv_InventoryBase.h"
+#include "Items/Inv_InventoryItem.h"
 
 UInv_InventoryComponent::UInv_InventoryComponent()
 	: InventoryList(this)
@@ -37,6 +38,8 @@ void UInv_InventoryComponent::TryAddItem(UInv_ItemComponent* ItemComponent)
 	}
 	
 	// 인벤토리에 아이템 추가
+	UInv_InventoryItem* FoundItem = InventoryList.FindFirstItemByType(ItemComponent->GetItemManifest().GetItemType());
+	Result.Item = FoundItem;
 	
 	// 아이템이 이미 있고 중첩 가능하다면
 	if (Result.Item.IsValid() && Result.bStackable)
@@ -82,6 +85,8 @@ void UInv_InventoryComponent::Server_AddNewItem_Implementation(UInv_ItemComponen
 {
 	UInv_InventoryItem* NewItem = InventoryList.AddEntry(ItemComponent);
 	
+	NewItem->SetTotalStackCount(StackCount);
+	
 	if (GetOwner()->GetNetMode() == NM_Standalone || GetOwner()->GetNetMode() == NM_ListenServer)
 	{
 		OnItemAdded.Broadcast(NewItem);
@@ -93,7 +98,13 @@ void UInv_InventoryComponent::Server_AddNewItem_Implementation(UInv_ItemComponen
 void UInv_InventoryComponent::Server_AddStacksToItem_Implementation(UInv_ItemComponent* ItemComponent, int StackCount,
 	int Remainder)
 {
+	const FGameplayTag& ItemType = IsValid(ItemComponent) ? ItemComponent->GetItemManifest().GetItemType() : FGameplayTag::EmptyTag;
+	UInv_InventoryItem* FoundItem = InventoryList.FindFirstItemByType(ItemType);
+	if (!IsValid(FoundItem)) return;
 	
+	FoundItem->SetTotalStackCount(StackCount + FoundItem->GetTotalStackCount());
+	// 잔여 수량 : 0 -> 땅에 있는 아이템 삭제
+	// 잔여 수량 : 0보다 크면 땅에 있는 아이템의 스택 수량을 잔여 수량으로 설정
 }
 
 void UInv_InventoryComponent::ConstructInventory()

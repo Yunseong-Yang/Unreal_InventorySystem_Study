@@ -94,3 +94,14 @@ void FInv_InventoryFastArray::RemoveEntry(UInv_InventoryItem* Item)
 		}
 	}
 }
+
+UInv_InventoryItem* FInv_InventoryFastArray::FindFirstItemByType(const FGameplayTag& ItemType)
+{
+	// Entries 배열에서 우리가 정의한 조건(람다)을 통과하는 첫 번째 요소의 '포인터'를 찾습니다.
+	FInv_InventoryEntry* FoundItemEntry = Entries.FindByPredicate([Type = ItemType](const FInv_InventoryEntry& Entry)
+	{
+		return IsValid(Entry.Item) && Entry.Item->GetItemManifest().GetItemType().MatchesTagExact(Type);
+	});
+	
+	return FoundItemEntry ? FoundItemEntry->Item : nullptr;
+}
